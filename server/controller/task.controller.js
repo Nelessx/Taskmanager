@@ -1,238 +1,148 @@
-import { validationResult } from "express-validator";
-import { user } from "../model/user.js";
-import { task as Task } from "../model/task.js";
+import prisma from "../prismaClient";
 
-export const postTask = (req, res, next) => {
-  const error = validationResult(req);
-
-  if (!error.isEmpty()) {
-    const err = new Error("Validation Error");
-    err.statusCode = 403;
-    const errArray = error.array();
-    err.data = errArray[0].msg;
-    throw err;
-  }
-
+export const postTask = async (req, res, next) => {
   const { task, priority } = req.body;
+  try {
+    const userData = await prisma.user.findUnique({
+      where: { id: req.userId },
+    });
 
-  user
-    .findById(req.userId)
-    .then((userData) => {
-      if (!userData) {
-        const err = new Error("invalid user");
-        err.statusCode = 403;
-        throw err;
-      }
+    if (!userData) {
+      const err = new Error("Invalid user");
+      err.statusCode = 403;
+      throw err;
+    }
 
-      const newTask = new Task({
+    const newTask = await prisma.task.create({
+      data: {
         task: task,
         priority: Number(priority),
-        user: userData._id,
-      });
-
-      return newTask.save();
-    })
-    .then((result) => {
-      if (!result) {
-        const err = new Error("something went wrong");
-        err.statusCode = 500;
-        throw err;
-      }
-      res.status(200).json({ message: "task created", data: result });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-
-      next(err);
+        userId: userData.id,
+      },
     });
-};
 
-export const getTask = (req, res, next) => {
-  const { sorts, filter, search } = req.query;
-
-  console.log(req.userId);
-
-  user
-    .findById(req.userId)
-    .then((userData) => {
-      if (!userData) {
-        const err = new Error("invalid user");
-        err.statusCode = 403;
-        throw err;
-      }
-
-      let query = { user: userData._id };
-
-      if (search && search.trim().length > 0) {
-        const searchRegex = new RegExp(search, "i");
-        query = {
-          ...query,
-          task: searchRegex,
-        };
-      }
-
-      if (filter.length > 0) {
-        query = { ...query, status: filter };
-      }
-
-      if (sorts.length > 0) {
-        let data = sorts.toLowerCase();
-        if (data === "date") {
-          return Task.find(query).sort({ createDate: -1 });
-        } else {
-          return Task.find(query).sort({ priority: -1 });
-        }
-      }
-
-      return Task.find(query);
-    })
-    .then((taskData) => {
-      if (!taskData) {
-        const err = new Error("no task found");
-        err.statusCode = 403;
-        throw err;
-      }
-
-      res.status(200).json({ message: "task found", data: taskData });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-
-      next(err);
-    });
-};
-
-export const deletTaks = (req, res, next) => {
-  const { taskId } = req.body;
-
-  Task.findByIdAndDelete(taskId)
-    .then((result) => {
-      if (!result) {
-        const err = new Error("delete failed");
-        err.statusCode = 401;
-        throw err;
-      }
-
-      return Task.find({ user: result.user });
-    })
-    .then((taskData) => {
-      if (!taskData) {
-        const err = new Error("not task found");
-        err.statusCode = 401;
-        throw err;
-      }
-      res.status(200).json({ message: "delete done", data: taskData });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-
-      next(err);
-    });
-};
-
-export const completeTask = (req, res, next) => {
-  const { taskId } = req.body;
-
-  Task.findByIdAndUpdate(taskId, { status: "Completed" }, { new: true })
-    .then((result) => {
-      if (!result) {
-        const err = new Error("Task not found");
-        err.statusCode = 404;
-        throw err;
-      }
-
-      return Task.find({ user: result.user });
-    })
-    .then((taskData) => {
-      if (!taskData) {
-        const err = new Error("No tasks found");
-        err.statusCode = 404;
-        throw err;
-      }
-      res
-        .status(200)
-        .json({ message: "Task marked as complete", data: taskData });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-
-      next(err);
-    });
-};
-
-export const getSingleTask = (req, res, next) => {
-  const { taskId } = req.query;
-
-  Task.findById(taskId)
-    .then((taskData) => {
-      if (!taskData) {
-        const err = new Error("not task found");
-        err.statusCode = 401;
-        throw err;
-        cd;
-      }
-      res.status(200).json({ message: "delete done", data: taskData });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
-    });
-};
-
-export const editTask = (req, res, next) => {
-  const error = validationResult(req);
-
-  if (!error.isEmpty()) {
-    const err = new Error("Validation Error");
-    err.statusCode = 403;
-    const errArray = error.array();
-    err.data = errArray[0].msg;
-    throw err;
+    res.status(200).json({ message: "Task created", data: newTask });
+  } catch (err) {
+    next(err);
   }
+};
 
-  const { taskId, task, priority } = req.body;
-
-  let singleTask;
-
-  Task.findByIdAndUpdate(
-    taskId,
-    { task: task, priority: priority },
-    { new: true },
-  )
-    .then((result) => {
-      if (!result) {
-        const err = new Error("Task not found");
-        err.statusCode = 404;
-        throw err;
-      }
-      singleTask = result;
-      return Task.find({ user: result.user });
-    })
-    .then((taskData) => {
-      if (!taskData) {
-        const err = new Error("No tasks found");
-        err.statusCode = 404;
-        throw err;
-      }
-      res
-        .status(201)
-        .json({ message: "task edit done", data: taskData, singleTask });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-
-      next(err);
+export const getTask = async (req, res, next) => {
+  const { sorts, filter, search } = req.query;
+  try {
+    const userData = await prisma.user.findUnique({
+      where: { id: req.userId },
     });
+
+    if (!userData) {
+      const err = new Error("Invalid user");
+      err.statusCode = 403;
+      throw err;
+    }
+
+    let query = { userId: userData.id };
+
+    if (search && search.trim().length > 0) {
+      query = { ...query, task: { contains: search, mode: 'insensitive' } };
+    }
+
+    if (filter) {
+      query = { ...query, status: filter };
+    }
+
+    let taskData;
+    if (sorts === "date") {
+      taskData = await prisma.task.findMany({
+        where: query,
+        orderBy: { createDate: 'desc' },
+      });
+    } else if (sorts === "priority") {
+      taskData = await prisma.task.findMany({
+        where: query,
+        orderBy: { priority: 'desc' },
+      });
+    } else {
+      taskData = await prisma.task.findMany({ where: query });
+    }
+
+    res.status(200).json({ message: "Task found", data: taskData });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteTask = async (req, res, next) => {
+  const { taskId } = req.body;
+  try {
+    const result = await prisma.task.delete({
+      where: { id: taskId },
+    });
+
+    const taskData = await prisma.task.findMany({
+      where: { userId: result.userId },
+    });
+
+    res.status(200).json({ message: "Task deleted", data: taskData });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const completeTask = async (req, res, next) => {
+  const { taskId } = req.body;
+  try {
+    const result = await prisma.task.update({
+      where: { id: taskId },
+      data: { status: "Completed" },
+    });
+
+    const taskData = await prisma.task.findMany({
+      where: { userId: result.userId },
+    });
+
+    res.status(200).json({ message: "Task marked as complete", data: taskData });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getSingleTask = async (req, res, next) => {
+  const { taskId } = req.query;
+  try {
+    const taskData = await prisma.task.findUnique({
+      where: { id: taskId },
+    });
+
+    if (!taskData) {
+      const err = new Error("Task not found");
+      err.statusCode = 401;
+      throw err;
+    }
+
+    res.status(200).json({ message: "Task found", data: taskData });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const editTask = async (req, res, next) => {
+  const { taskId, task, priority } = req.body;
+  try {
+    const singleTask = await prisma.task.update({
+      where: { id: taskId },
+      data: { task: task, priority: priority },
+    });
+
+    const taskData = await prisma.task.findMany({
+      where: { userId: singleTask.userId },
+    });
+
+    res.status(201).json({
+      message: "Task edited",
+      data: taskData,
+      singleTask,
+    });
+  } catch (err) {
+    next(err);
+  }
 };
