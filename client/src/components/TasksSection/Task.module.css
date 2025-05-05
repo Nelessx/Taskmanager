@@ -229,3 +229,14 @@ td {
     width: 16px;
   }
 }
+
+.menuContainer {
+  position: relative;
+}
+
+.menuButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px 10px;
+}

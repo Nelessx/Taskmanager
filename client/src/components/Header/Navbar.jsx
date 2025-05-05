@@ -2,7 +2,6 @@ import styles from "./Navbar.module.css";
 import {
   crosLight,
   searchLightLogo,
-  taskMasterLogo,
   userLogo,
 } from "../../assets/index.js";
 import { useEffect, useState } from "react";
@@ -57,8 +56,7 @@ const Navbar = () => {
   return (
     <nav className={styles["nav-container"]}>
       <div className={styles["nav-container__logo"]} onClick={goToIndex}>
-        <img src={taskMasterLogo} alt={"task-master-logo"} />
-        <h3>TaskMaster</h3>
+        <h3>Task Manager</h3>
       </div>
 
       <div className={styles["action-container"]}>

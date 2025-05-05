@@ -20,7 +20,7 @@ const URL = import.meta.env.VITE_SERVER_URL;
 const Tasks = () => {
   const dispatch = useDispatch();
   const [isNewTask, setIsNewTask] = useState(false);
-  const [isEditTask, setEditTask] = useState(false);
+  const [isEditTask, setIsEditTask] = useState(false);
   const [isFilterShow, setIsFilterShow] = useState(false);
   const [isShortShow, setIsShortShow] = useState(false);
   const [sortBy, setSortBy] = useState("Default");
@@ -35,7 +35,7 @@ const Tasks = () => {
     if (!isEditTask) {
       setIsNewTask((pre) => !pre);
     }
-    setEditTask(false);
+    setIsEditTask(false);
   };
 
   const filterHandler = (value, e, data) => {
@@ -52,41 +52,64 @@ const Tasks = () => {
     setSortBy(data);
   };
 
-  const editTaskHandler = (data) => {
-    setEditTask(true);
-    setIsNewTask(false);
-    window.scrollTo(0, 0);
+  const editTaskHandler = async (taskId) => {
+    try {
+      // Close new task form if it's open
+      setIsNewTask(false);
 
-    const url = URL + `singletask?taskId=${data}`;
-    fetch(url, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("task delete issue");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        setSingleTask(data.data);
-      })
-      .catch((err) => {
-        console.log(err);
-        dispatch(
-          uiAction.errorMessageHandler({ message: "Something went wrong!" }),
-        );
+      const response = await fetch(`${URL}task/${taskId}`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
+
+      if (!response.ok) {
+        throw new Error("task fetch issue");
+      }
+
+      const data = await response.json();
+      setIsEditTask(true);
+      dispatch(taskAction.setEditingTask({ task: data.data }));
+    } catch (err) {
+      console.error(err);
+      dispatch(
+        uiAction.errorMessageHandler({ message: "Failed to fetch task" })
+      );
+    }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch(`${URL}task`, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch tasks");
+      }
+
+      const data = await response.json();
+      dispatch(taskAction.replaceTask({ tasks: data.data }));
+    } catch (err) {
+      console.error(err);
+      dispatch(
+        uiAction.errorMessageHandler({ message: "Failed to load tasks" })
+      );
+    }
   };
 
   const getTasks = () => {
     if (sortBy && filterBy) {
       const url =
         URL +
-        `task?sorts=${sortBy === "Default" ? "" : sortBy}&filter=${filterBy === "All" ? "" : filterBy}&search=${searchData}`;
+        `task?sorts=${sortBy === "Default" ? "" : sortBy}&filter=${
+          filterBy === "All" ? "" : filterBy
+        }&search=${searchData}`;
 
       fetch(url, { method: "GET", credentials: "include" })
         .then((response) => {
@@ -101,7 +124,7 @@ const Tasks = () => {
         .catch((err) => {
           console.log(err);
           dispatch(
-            uiAction.errorMessageHandler({ message: "Something went wrong!" }),
+            uiAction.errorMessageHandler({ message: "Something went wrong!" })
           );
         });
     }
@@ -110,6 +133,15 @@ const Tasks = () => {
   useEffect(() => {
     getTasks();
   }, [filterBy, sortBy, searchData]);
+
+  useEffect(() => {
+    fetchTasks();
+
+    return () => {
+      dispatch(taskAction.replaceTask({ tasks: [] }));
+      dispatch(taskAction.clearEditingTask());
+    };
+  }, [dispatch]);
 
   const closeMessage = () => {
     dispatch(uiAction.closeMessageHandler());
@@ -124,6 +156,10 @@ const Tasks = () => {
       clearTimeout(messageHideHandler);
     };
   }, [isMessage, message]);
+
+  const closeEditTaskHandler = () => {
+    setIsEditTask(false);
+  };
 
   return (
     <div className={styles["tasks-container"]}>
@@ -140,7 +176,9 @@ const Tasks = () => {
         <div className={styles["task-header-options"]}>
           <div
             onClick={newTaskHandler}
-            className={`${styles["create-task"]} ${isNewTask ? styles["close-task"] : ""} ${isEditTask ? styles["close-task"] : ""}`}
+            className={`${styles["create-task"]} ${
+              isNewTask ? styles["close-task"] : ""
+            } ${isEditTask ? styles["close-task"] : ""}`}
           >
             <div className={styles["create-task-logo"]}>
               <img
@@ -183,7 +221,7 @@ const Tasks = () => {
         </div>
       </div>
       {isNewTask && <NewTask />}
-      {isEditTask && <EditTask singleTask={singleTask} />}
+      {isEditTask && <EditTask closeHandler={closeEditTaskHandler} />}
       <Task editTaskHandler={editTaskHandler} />
     </div>
   );

@@ -56,7 +56,7 @@ const Task = ({ editTaskHandler }) => {
     e.stopPropagation();
     setConfirmType(null);
 
-    const url = URL + "task";
+    const url = `${URL}task/${taskId}`;
 
     fetch(url, {
       method: "DELETE",
@@ -64,7 +64,6 @@ const Task = ({ editTaskHandler }) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ taskId }),
     })
       .then((response) => {
         if (!response.ok) {
@@ -73,48 +72,50 @@ const Task = ({ editTaskHandler }) => {
         return response.json();
       })
       .then((data) => {
-        console.log(data);
-        dispatch(taskAction.replaceTask({ tasks: data.data }));
+        const updatedTasks = taskList.filter((task) => task.id !== taskId);
+        dispatch(taskAction.replaceTask({ tasks: updatedTasks }));
         dispatch(uiAction.messageHandler({ message: "Delete Done!" }));
       })
       .catch((err) => {
-        console.log(err);
+        console.error(err);
         dispatch(
-          uiAction.errorMessageHandler({ message: "Something went wrong!" }),
+          uiAction.errorMessageHandler({ message: "Something went wrong!" })
         );
       });
   };
 
-  const completeOnConfirmHandler = (e, taskId) => {
-    e.stopPropagation();
-    setConfirmType(null);
-    const url = URL + "task";
-
-    fetch(url, {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ taskId }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("task delete issue");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        console.log(data);
-        dispatch(taskAction.replaceTask({ tasks: data.data }));
-        dispatch(uiAction.messageHandler({ message: "Complete Done!" }));
-      })
-      .catch((err) => {
-        console.log(err);
-        dispatch(
-          uiAction.errorMessageHandler({ message: "Something went wrong!" }),
-        );
+  const completeOnConfirmHandler = async (taskId) => {
+    try {
+      const url = `${URL}task/${taskId}`;
+      const response = await fetch(url, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "Completed",
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error("Failed to update task");
+      }
+
+      const data = await response.json();
+
+      // Update local state with the updated task
+      const updatedTasks = taskList.map((task) =>
+        task.id === taskId ? { ...task, status: "Completed" } : task
+      );
+      dispatch(taskAction.replaceTask({ tasks: updatedTasks }));
+      dispatch(uiAction.messageHandler({ message: "Task completed!" }));
+    } catch (err) {
+      console.error(err);
+      dispatch(
+        uiAction.errorMessageHandler({ message: "Failed to update task" })
+      );
+    }
   };
 
   return (
@@ -137,13 +138,17 @@ const Task = ({ editTaskHandler }) => {
         </thead>
         <tbody>
           {taskList.map((task) => (
-            <tr key={task._id}>
+            <tr key={task.id}>
               <td>{task.task}</td>
-              <td>{convertTimestampToIST(task.createDate)}</td>
+              <td>{convertTimestampToIST(task.createdAt)}</td>
               <td>
                 <div className={styles["progress-section"]}>
                   <div
-                    className={`${task.status === "Pending" ? styles["orange-dot"] : styles["dot"]}`}
+                    className={`${
+                      task.status === "Pending"
+                        ? styles["orange-dot"]
+                        : styles["dot"]
+                    }`}
                   ></div>
                   <p>{task.status}</p>
                 </div>
@@ -164,14 +169,14 @@ const Task = ({ editTaskHandler }) => {
               <td>
                 <div
                   className={styles["three-dot-option-section"]}
-                  onClick={(e) => optionShowHandler(e, task._id)}
+                  onClick={(e) => optionShowHandler(e, task.id)}
                 >
                   <img
                     className={styles["three-dot-option-img"]}
                     src={threeDotLightLogo}
                     alt={"threeDotLight"}
                   />
-                  {shownOptionTaskId === task._id && (
+                  {shownOptionTaskId === task.id && (
                     <div
                       className={styles["three-dot-option"]}
                       onMouseLeave={(e) => optionShowHandler(e, null)}
@@ -179,7 +184,7 @@ const Task = ({ editTaskHandler }) => {
                       <p
                         onClick={(e) => {
                           optionShowHandler(e, null);
-                          editTaskHandler(task._id);
+                          editTaskHandler(task.id);
                         }}
                       >
                         Edit
@@ -187,7 +192,7 @@ const Task = ({ editTaskHandler }) => {
                       <p
                         onClick={(e) => {
                           optionShowHandler(e, null);
-                          onDeleteClicked(e, task._id);
+                          onDeleteClicked(e, task.id);
                         }}
                       >
                         Delete
@@ -195,20 +200,20 @@ const Task = ({ editTaskHandler }) => {
                       <p
                         onClick={(e) => {
                           optionShowHandler(e, null);
-                          onCompleteClicked(e, task._id);
+                          onCompleteClicked(e, task.id);
                         }}
                       >
                         Mark Complete
                       </p>
                     </div>
                   )}
-                  {confirmType && confirmType.taskId === task._id && (
+                  {confirmType && confirmType.taskId === task.id && (
                     <TaskOptionConfirmCard
                       closeHander={confirmOptionCloseHandler}
                       optionHandeler={
                         confirmType.type === "delete"
-                          ? (e) => deleteOnConfirmHandler(e, task._id)
-                          : (e) => completeOnConfirmHandler(e, task._id)
+                          ? (e) => deleteOnConfirmHandler(e, task.id)
+                          : (e) => completeOnConfirmHandler(task.id)
                       }
                     />
                   )}

@@ -1,7 +1,6 @@
 import Signup from "../components/Auth/Signup.jsx";
 import Login from "../components/Auth/Login.jsx";
 import styles from "./Auth.module.css";
-import { taskMasterLogo } from "../assets/index.js";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Message from "../components/UI/Message..jsx";
@@ -51,8 +50,7 @@ const Auth = () => {
 
       <div className={styles["auth-container-sub"]}>
         <div className={styles["logo-section"]}>
-          <img src={taskMasterLogo} alt={"logo"} />
-          <h2>Taskmaster</h2>
+          <h2>Task Manager</h2>
         </div>
         <div
           className={`${styles["auth-type"]} ${!isLogin ? styles["auth-signup"] : ""}`}
@@ -75,7 +73,6 @@ const Auth = () => {
         {isLogin && <Login />}
         {!isLogin && <Signup />}
       </div>
-      <div className={styles["auth-design"]}></div>
     </div>
   );
 };

@@ -1,20 +1,19 @@
 import styles from "./NewTask.module.css";
-import { useDispatch } from "react-redux";
-import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { taskAction } from "../../store/tasks.js";
 import { uiAction } from "../../store/ui.js";
 
 const URL = import.meta.env.VITE_SERVER_URL;
 
-const EditTask = ({ singleTask }) => {
+const EditTask = ({ closeHandler = () => {} }) => {
   const dispatch = useDispatch();
+  const editingTask = useSelector((state) => state.task.editingTask);
   const [taskData, setTaskData] = useState({
-    task: "",
-    priority: "",
+    task: editingTask?.task || "",
+    priority: editingTask?.priority || "",
   });
-  const [isLoader, setIsLoder] = useState(false);
-  const [isValid, setIsValid] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
 
   const taskDataHandler = (e) => {
     const { name, value } = e.target;
@@ -22,71 +21,65 @@ const EditTask = ({ singleTask }) => {
     setTaskData((prevState) => {
       return { ...prevState, [name]: value };
     });
-
-    if (name === "task") {
-      if (value.length >= 4) {
-        setIsValid(true);
-        setErrorMessage("");
-      } else {
-        setIsValid(false);
-        setErrorMessage("Task must be at least 4 characters long.");
-      }
-    }
   };
 
-  useEffect(() => {
-    setTaskData({
-      task: singleTask.task,
-      priority: singleTask.priority,
-    });
-  }, [singleTask]);
-
-  const onDataSubmit = (e) => {
+  const onDataSubmit = async (e) => {
     e.preventDefault();
 
-    if (taskData.task.length < 4) {
-      setIsValid(false);
-      setErrorMessage("Task must be at least 4 characters long.");
+    // Add validation
+    if (!taskData.task || taskData.task.trim().length < 3) {
+      dispatch(
+        uiAction.errorMessageHandler({
+          message: "Task must be at least 3 characters long",
+        })
+      );
       return;
     }
 
-    const url = URL + "edittask";
-    setIsLoder(true);
-    fetch(url, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        taskId: singleTask._id,
-        task: taskData.task,
-        priority: taskData.priority,
-      }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Task update issue");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        setTaskData({
-          task: data.singleTask.task,
-          priority: data.singleTask.priority,
-        });
-        dispatch(taskAction.replaceTask({ tasks: data.data }));
-        dispatch(uiAction.messageHandler({ message: "Edit Done!" }));
-      })
-      .catch((err) => {
-        console.log(err);
-        dispatch(
-          uiAction.errorMessageHandler({ message: "Something went wrong!" }),
-        );
-      })
-      .finally(() => {
-        setIsLoder(false);
+    if (!taskData.priority) {
+      dispatch(
+        uiAction.errorMessageHandler({
+          message: "Please select a priority",
+        })
+      );
+      return;
+    }
+
+    try {
+      const response = await fetch(`${URL}task/${editingTask.id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(taskData),
       });
+
+      if (!response.ok) {
+        throw new Error("Task update issue");
+      }
+
+      const data = await response.json();
+
+      dispatch(taskAction.updateTask({ task: data.data }));
+      dispatch(
+        uiAction.messageHandler({ message: "Task updated successfully!" })
+      );
+
+      dispatch(taskAction.clearEditingTask());
+
+      // Close modal only if update was successful
+      if (closeHandler && typeof closeHandler === "function") {
+        closeHandler();
+      }
+    } catch (err) {
+      console.error("Update Error:", err);
+      dispatch(
+        uiAction.errorMessageHandler({
+          message: err.message || "Failed to update task",
+        })
+      );
+    }
   };
 
   return (
@@ -101,11 +94,7 @@ const EditTask = ({ singleTask }) => {
             placeholder={"Edit Task"}
             name={"task"}
             value={taskData.task}
-            className={!isValid ? styles.invalid : ""}
           />
-          {!isValid && (
-            <p className={styles["error-message"]}>{errorMessage}</p>
-          )}
           <label htmlFor={"pri"}>Priority</label>
           <select
             onChange={taskDataHandler}
@@ -118,13 +107,15 @@ const EditTask = ({ singleTask }) => {
             <option value={2}>Medium</option>
             <option value={3}>High</option>
           </select>
-          <button type="submit">
-            {isLoader ? "Loading...." : "Update Task"}
-          </button>
+          <button type="submit">Update Task</button>
         </form>
       </div>
     </div>
   );
+};
+
+EditTask.propTypes = {
+  closeHandler: PropTypes.func,
 };
 
 export default EditTask;

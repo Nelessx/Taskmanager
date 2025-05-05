@@ -34,7 +34,7 @@ const NewTask = () => {
     }
   };
 
-  const onDataSubmit = (e) => {
+  const onDataSubmit = async (e) => {
     e.preventDefault();
 
     if (taskData.task.length < 4) {
@@ -46,38 +46,44 @@ const NewTask = () => {
     const url = URL + "task";
 
     setIsLoder(true);
-    fetch(url, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(taskData),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("task added issue");
-        }
-
-        return response.json();
-      })
-      .then((data) => {
-        dispatch(taskAction.addNewTask({ task: data.data }));
-        dispatch(uiAction.messageHandler({ message: "New Task Added!" }));
-        console.log(data);
-      })
-      .catch((err) => {
-        console.log(err);
-        dispatch(
-          uiAction.errorMessageHandler({ message: "Something went wrong!" }),
-        );
-      })
-      .finally(() => {
-        setIsLoder(false);
-        setTaskData({ task: "", priority: "" });
-        setIsValid(true);
-        setErrorMessage("");
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        credentials: "include", // Important for cookies
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(taskData),
       });
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          // Handle authentication error
+          dispatch(
+            uiAction.errorMessageHandler({
+              message: "Please login again",
+            })
+          );
+          // Optionally redirect to login
+          return;
+        }
+        throw new Error("Failed to add task");
+      }
+
+      const data = await response.json();
+      dispatch(taskAction.addNewTask({ task: data.data }));
+      dispatch(uiAction.messageHandler({ message: "New Task Added!" }));
+    } catch (err) {
+      console.error(err);
+      dispatch(
+        uiAction.errorMessageHandler({ message: "Something went wrong!" })
+      );
+    } finally {
+      setIsLoder(false);
+      setTaskData({ task: "", priority: "" });
+      setIsValid(true);
+      setErrorMessage("");
+    }
   };
 
   return (
