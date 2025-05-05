@@ -68,7 +68,7 @@ const EditTask = ({ closeHandler = () => {} }) => {
 
       dispatch(taskAction.clearEditingTask());
 
-      // Close modal only if update was successful
+      
       if (closeHandler && typeof closeHandler === "function") {
         closeHandler();
       }

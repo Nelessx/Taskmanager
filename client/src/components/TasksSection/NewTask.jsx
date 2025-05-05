@@ -49,7 +49,7 @@ const NewTask = () => {
     try {
       const response = await fetch(url, {
         method: "POST",
-        credentials: "include", // Important for cookies
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },

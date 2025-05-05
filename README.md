@@ -50,3 +50,8 @@ A full-stack task management application built with the MERN stack (MongoDB repl
 - `GET /user/profile` - Get user profile
 - `PATCH /user/profile` - Update user profile
 
+## 🚀 Deployment
+
+- Frontend: Vercel
+- Backend: Render
+- Database: Render PostgreSQL

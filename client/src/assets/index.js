@@ -10,7 +10,6 @@ import correctLight from "./lightmode/icons8-correct-48.png";
 
 import plusLogo from "./icons8-plus-48.png";
 import userLogo from "./icons8-user-96.png";
-import taskMasterLogo from "./png-translogo.png";
 import redFlag from "./red-flag-48.png";
 import greenFlag from "./green-flag.png";
 import blueFlag from "./blue-flag.png";
@@ -23,7 +22,6 @@ export {
   sunLogo,
   userLogo,
   plusLogo,
-  taskMasterLogo,
   greenFlag,
   redFlag,
   blueFlag,
