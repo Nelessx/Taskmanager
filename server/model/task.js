@@ -1,30 +1,55 @@
-import mongoose from "mongoose";
+import { DataTypes } from "sequelize";
+import { sequelize } from "../config/database.js";
+import User from "./user.js";
 
-const Schema = mongoose.Schema;
+const Task = sequelize.define(
+  "Task",
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    task: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+        len: [3, 255],
+      },
+    },
+    priority: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+      validate: {
+        min: 1,
+        max: 5,
+      },
+    },
+    status: {
+      type: DataTypes.ENUM("Pending", "Completed"),
+      defaultValue: "Pending",
+      allowNull: false,
+    },
+  },
+  {
+    timestamps: true,
+    tableName: "tasks",
+  }
+);
 
-const taskSchema = new Schema({
-  createDate: {
-    type: Date,
-    default: Date.now,
+// Define relationships
+Task.belongsTo(User, {
+  foreignKey: {
+    name: "UserId",
+    allowNull: false,
   },
-  task: {
-    type: String,
-    required: true,
-  },
-  priority: {
-    type: Number,
-    required: true,
-  },
-  status: {
-    type: String,
-    required: true,
-    default: "Pending",
-  },
-  user: {
-    type: Schema.Types.ObjectId,
-    required: true,
-    ref: "User",
-  },
+  onDelete: "CASCADE",
 });
 
-export const task = mongoose.model("Task", taskSchema);
+User.hasMany(Task, {
+  foreignKey: "UserId",
+});
+
+export default Task;

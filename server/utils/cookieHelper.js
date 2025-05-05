@@ -1,16 +1,22 @@
 export const getCookieValue = (cookieString, cookieName) => {
-  try {
-    const cookies = cookieString.split(";").map((cookie) => cookie.trim());
+  if (!cookieString) return null;
 
-    for (const cookie of cookies) {
-      const [name, value] = cookie.split("=");
-      if (name === cookieName) {
-        return value;
-      }
-    }
+  const cookies = cookieString.split(";");
+  const targetCookie = cookies.find((cookie) =>
+    cookie.trim().startsWith(`${cookieName}=`)
+  );
 
-    return null;
-  } catch (err) {
-    return null;
-  }
+  if (!targetCookie) return null;
+
+  return targetCookie.split("=")[1];
+};
+
+export const createCookieOptions = (isProduction = false) => {
+  return {
+    maxAge: process.env.COOKIE_EXPIRE,
+    httpOnly: true,
+    domain: process.env.COOKIE_DOMAIN,
+    secure: isProduction,
+    sameSite: isProduction ? "strict" : "lax",
+  };
 };
