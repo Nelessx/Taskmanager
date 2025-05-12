@@ -1,23 +1,25 @@
 import styles from "./FunctionCard.module.css";
 import { correctLight, crosLight } from "../../assets/index.js";
 
-export const TasksFilterCard = ({ optionHandlder, options = [] }) => {
+export const TasksFilterCard = ({ options, optionHandlder, currentSort }) => {
   return (
-    <div
-      className={styles["filter-options"]}
-      onMouseLeave={(e) => optionHandlder(false, e)}
-    >
-      {options.map((option, index) => (
-        <p key={index} onClick={(e) => optionHandlder(false, e, option)}>
+    <div className={styles["filter-card"]}>
+      {options.map((option) => (
+        <p
+          key={option}
+          className={`${styles["filter-option"]} ${
+            currentSort?.toLowerCase() === option.toLowerCase()
+              ? styles["active"]
+              : ""
+          }`}
+          onClick={(e) => {
+            e.stopPropagation();
+            optionHandlder(false, e, option);
+          }}
+        >
           {option}
         </p>
       ))}
-      <div
-        onClick={(e) => optionHandlder(false, e)}
-        className={styles["filter-cross"]}
-      >
-        <img src={crosLight} alt={"cross"} />
-      </div>
     </div>
   );
 };

@@ -20,7 +20,6 @@
   cursor: pointer;
 }
 
-
 .action-container {
   display: flex;
   align-items: center;
@@ -28,7 +27,7 @@
   gap: 25px;
 }
 
-.search {
+/* .search {
   position: relative;
   display: flex;
   justify-content: center;
@@ -72,7 +71,7 @@
 
 .search input:focus {
   outline: none;
-}
+} */
 
 .theme-mode {
   display: flex;
@@ -112,26 +111,28 @@
 
 .profile-options {
   position: absolute;
-  bottom: -165px;
-  left: -160px;
+  bottom: -112px;
+  left: -130px;
   z-index: 4;
   background-color: rgba(212, 209, 253, 0.44);
   width: 200px;
-  height: 150px;
+  height: 100px;
   border-radius: 12px;
   border: 1px solid #4338c7;
   padding-inline: 5px;
   backdrop-filter: blur(40px);
+
 }
 
-.profile {
+/* .profile {
   margin-top: 40px;
   background-color: rgba(196, 120, 243, 0.41);
   border: 1px solid #6b0693;
-}
+} */
 
 .profile,
 .logout {
+    margin-top: 10px;
   margin-bottom: 10px;
   padding-block: 8px;
   border-radius: 8px;
@@ -161,7 +162,7 @@
   justify-content: center;
   align-items: center;
   position: absolute;
-  top: 5px;
+  top: 60px;
   right: 5px;
   cursor: pointer;
 }

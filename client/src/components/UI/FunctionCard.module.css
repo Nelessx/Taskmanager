@@ -101,3 +101,30 @@
   background-color: rgba(255, 0, 0, 0.71);
   border: 1px solid #e30404;
 }
+
+.filter-card {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+.filter-option {
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-radius: 4px;
+}
+
+.filter-option:hover {
+  background-color: #f0f0f0;
+}
+
+.filter-option.active {
+  background-color: #e0e0e0;
+  font-weight: 500;
+}

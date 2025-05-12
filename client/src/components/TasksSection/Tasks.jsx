@@ -7,7 +7,7 @@ import {
 } from "../../assets/index.js";
 import Task from "./Task.jsx";
 import NewTask from "./NewTask.jsx";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { TasksFilterCard } from "../UI/FunctionCard.jsx";
 import EditTask from "./EditTask.jsx";
 import { taskAction } from "../../store/tasks.js";
@@ -23,10 +23,10 @@ const Tasks = () => {
   const [isEditTask, setIsEditTask] = useState(false);
   const [isFilterShow, setIsFilterShow] = useState(false);
   const [isShortShow, setIsShortShow] = useState(false);
-  const [sortBy, setSortBy] = useState("Default");
   const [filterBy, setFilterBy] = useState("All");
   const [singleTask, setSingleTask] = useState("");
-  const searchData = useSelector((state) => state.task.searchData);
+  const [currentSort, setCurrentSort] = useState("default");
+  const tasks = useSelector((state) => state.task.tasks);
   const isMessage = useSelector((state) => state.ui.isMessage);
   const message = useSelector((state) => state.ui.message);
   const messageType = useSelector((state) => state.ui.messageType);
@@ -38,18 +38,29 @@ const Tasks = () => {
     setIsEditTask(false);
   };
 
-  const filterHandler = (value, e, data) => {
-    e.stopPropagation();
-    setIsFilterShow(value);
-    setIsShortShow(false);
-    setFilterBy(data);
+  const filterHandler = (showMenu, e, filterType) => {
+    e?.preventDefault();
+
+    if (filterType) {
+      setFilterBy(filterType);
+      fetchTasks(currentSort, filterType);
+      setIsFilterShow(false);
+    } else {
+      setIsFilterShow(showMenu);
+    }
   };
 
-  const shorterHandler = (value, e, data) => {
-    e.stopPropagation();
-    setIsShortShow(value);
-    setIsFilterShow(false);
-    setSortBy(data);
+  const shorterHandler = (showMenu, e, sortType) => {
+    e?.preventDefault();
+
+    if (sortType) {
+      setCurrentSort(sortType.toLowerCase());
+      dispatch(taskAction.setSortBy(sortType.toLowerCase()));
+      fetchTasks(sortType.toLowerCase(), filterBy);
+      setIsShortShow(false);
+    } else {
+      setIsShortShow(showMenu);
+    }
   };
 
   const editTaskHandler = async (taskId) => {
@@ -80,9 +91,14 @@ const Tasks = () => {
     }
   };
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (sortType = currentSort, filter = filterBy) => {
     try {
-      const response = await fetch(`${URL}task`, {
+      const queryParams = new URLSearchParams({
+        sorts: sortType,
+        filter: filter,
+      });
+
+      const response = await fetch(`${URL}task?${queryParams}`, {
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
@@ -94,7 +110,13 @@ const Tasks = () => {
       }
 
       const data = await response.json();
-      dispatch(taskAction.replaceTask({ tasks: data.data }));
+      dispatch(
+        taskAction.replaceTask({
+          tasks: data.data,
+          sortBy: sortType,
+          filter: filter,
+        })
+      );
     } catch (err) {
       console.error(err);
       dispatch(
@@ -103,45 +125,9 @@ const Tasks = () => {
     }
   };
 
-  const getTasks = () => {
-    if (sortBy && filterBy) {
-      const url =
-        URL +
-        `task?sorts=${sortBy === "Default" ? "" : sortBy}&filter=${
-          filterBy === "All" ? "" : filterBy
-        }&search=${searchData}`;
-
-      fetch(url, { method: "GET", credentials: "include" })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error("task get issue");
-          }
-          return response.json();
-        })
-        .then((data) => {
-          dispatch(taskAction.replaceTask({ tasks: data.data }));
-        })
-        .catch((err) => {
-          console.log(err);
-          dispatch(
-            uiAction.errorMessageHandler({ message: "Something went wrong!" })
-          );
-        });
-    }
-  };
-
-  useEffect(() => {
-    getTasks();
-  }, [filterBy, sortBy, searchData]);
-
   useEffect(() => {
     fetchTasks();
-
-    return () => {
-      dispatch(taskAction.replaceTask({ tasks: [] }));
-      dispatch(taskAction.clearEditingTask());
-    };
-  }, [dispatch]);
+  }, [currentSort, filterBy]);
 
   const closeMessage = () => {
     dispatch(uiAction.closeMessageHandler());
@@ -215,6 +201,7 @@ const Tasks = () => {
               <TasksFilterCard
                 options={["Default", "Date", "Priority"]}
                 optionHandlder={shorterHandler}
+                currentSort={currentSort}
               />
             )}
           </div>

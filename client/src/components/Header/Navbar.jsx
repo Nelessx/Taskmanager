@@ -60,7 +60,7 @@ const Navbar = () => {
       </div>
 
       <div className={styles["action-container"]}>
-        {location.pathname === "/" ? (
+        {/* {location.pathname === "/" ? (
           <div
             className={`${styles["search"]} ${
               isShowSeach ? styles["show-search"] : ""
@@ -84,7 +84,7 @@ const Navbar = () => {
           </div>
         ) : (
           ""
-        )}
+        )} */}
         <div
           className={styles["profile-logo"]}
           onClick={(e) => profileHandler(true, e)}
@@ -95,14 +95,14 @@ const Navbar = () => {
               className={styles["profile-options"]}
               onMouseLeave={(e) => profileHandler(false, e)}
             >
-              <Link to={"/profile"}>
+              {/* <Link >
                 <div
                   className={styles["profile"]}
                   onClick={(e) => profileHandler(false, e)}
                 >
                   <p>Profile</p>
                 </div>
-              </Link>
+              </Link> */}
 
               <div
                 className={styles["logout"]}

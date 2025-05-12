@@ -96,6 +96,11 @@
   background-color: #efefef;
 }
 
+.search-input:focus {
+  outline: none;
+  border-color: #695cfe;
+}
+
 @media (max-width: 650px) {
   .create-task {
     display: flex;

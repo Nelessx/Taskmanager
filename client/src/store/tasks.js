@@ -2,6 +2,9 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   tasks: [],
+  sortBy: "default",
+  filterBy: "All",
+  searchQuery: "",
   editingTask: null,
 };
 
@@ -32,6 +35,37 @@ const taskSlice = createSlice({
     },
     replaceTask(state, action) {
       state.tasks = action.payload.tasks;
+      state.sortBy = action.payload.sortBy;
+      state.filterBy = action.payload.filter;
+
+      // Filter tasks based on search query
+      if (state.searchQuery) {
+        state.tasks = state.tasks.filter((task) =>
+          task.task.toLowerCase().includes(state.searchQuery.toLowerCase())
+        );
+      }
+
+      // Sort tasks based on current sortBy
+      switch (state.sortBy) {
+        case "priority":
+          state.tasks.sort((a, b) => Number(b.priority) - Number(a.priority));
+          break;
+        case "date":
+          state.tasks.sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          );
+          break;
+        default:
+          state.tasks.sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          );
+      }
+    },
+    setSortBy(state, action) {
+      state.sortBy = action.payload;
+    },
+    setSearchQuery(state, action) {
+      state.searchQuery = action.payload;
     },
   },
 });

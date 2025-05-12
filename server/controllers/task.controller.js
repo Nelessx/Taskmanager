@@ -35,26 +35,43 @@ export const getTask = async (req, res, next) => {
 
     let queryOptions = {
       where: { UserId: userId },
-      order: [],
+      order: [["createdAt", "DESC"]], // Default sorting
     };
 
-    if (search) {
-      queryOptions.where.task = { [Op.iLike]: `%${search}%` };
-    }
-
-    if (filter) {
+    // Add filter for task status
+    if (filter && filter !== "All") {
       queryOptions.where.status = filter;
     }
 
+    // Handle sorting
     if (sorts) {
-      queryOptions.order =
-        sorts.toLowerCase() === "date"
-          ? [["createdAt", "DESC"]]
-          : [["priority", "DESC"]];
+      switch (sorts.toLowerCase()) {
+        case "priority":
+          queryOptions.order = [["priority", "DESC"]];
+          break;
+        case "date":
+          queryOptions.order = [["createdAt", "DESC"]];
+          break;
+        default:
+          queryOptions.order = [["createdAt", "DESC"]];
+      }
+    }
+
+    // Add search if provided
+    if (search) {
+      queryOptions.where.task = {
+        [Op.iLike]: `%${search}%`,
+      };
     }
 
     const tasks = await Task.findAll(queryOptions);
-    res.status(200).json({ message: "Tasks found", data: tasks });
+
+    res.status(200).json({
+      message: "Tasks fetched successfully",
+      data: tasks,
+      filter: filter || "All",
+      total: tasks.length,
+    });
   } catch (err) {
     next(err);
   }
